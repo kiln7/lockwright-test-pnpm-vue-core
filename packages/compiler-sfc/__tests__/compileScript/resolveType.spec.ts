@@ -1551,6 +1551,84 @@ describe('resolveType', () => {
       expect(deps && [...deps]).toStrictEqual(['/src/types.ts'])
     })
 
+    test('ts module resolve w/ project reference extending a config in another directory', () => {
+      const files = {
+        '/tsconfig.json': JSON.stringify({
+          files: [],
+          references: [{ path: './tsconfig.app.json' }],
+        }),
+        '/tsconfig.app.json': JSON.stringify({
+          extends: './.nuxt/tsconfig.app.json',
+        }),
+        '/.nuxt/tsconfig.app.json': JSON.stringify({
+          compilerOptions: {
+            paths: {
+              '#my-types': ['../src/types'],
+            },
+          },
+          include: ['../app/**/*'],
+        }),
+        '/src/types.ts': `export type Trigger = 'onNuxtReady' | string[] | boolean`,
+      }
+
+      const { props, deps } = resolve(
+        `
+        import type { Trigger } from '#my-types'
+        defineProps<{ trigger?: Trigger }>()
+        `,
+        files,
+        {},
+        '/app/components/Comp.vue',
+      )
+
+      expect(props).toStrictEqual({
+        trigger: ['String', 'Array', 'Boolean'],
+      })
+      expect(deps && [...deps]).toStrictEqual(['/src/types.ts'])
+    })
+
+    test('ts module resolve w/ project reference extending a config in another directory & exclude', () => {
+      const files = {
+        '/tsconfig.json': JSON.stringify({
+          references: [{ path: './tsconfig.app.json' }],
+          compilerOptions: {
+            paths: {
+              '#my-types': ['./src/fallback'],
+            },
+          },
+        }),
+        '/tsconfig.app.json': JSON.stringify({
+          extends: './configs/base.json',
+        }),
+        '/configs/base.json': JSON.stringify({
+          compilerOptions: {
+            paths: {
+              '#my-types': ['../src/types'],
+            },
+          },
+          include: ['../**/*'],
+          exclude: ['app/**/*'],
+        }),
+        '/src/types.ts': 'export type Value = string',
+        '/src/fallback.ts': 'export type Value = boolean',
+      }
+
+      const { props, deps } = resolve(
+        `
+        import type { Value } from '#my-types'
+        defineProps<{ value: Value }>()
+        `,
+        files,
+        {},
+        '/configs/app/Comp.vue',
+      )
+
+      expect(props).toStrictEqual({
+        value: ['Boolean'],
+      })
+      expect(deps && [...deps]).toStrictEqual(['/src/fallback.ts'])
+    })
+
     test('ts module resolve parses a shared extended config once', () => {
       const base = '/tsconfig.base.json'
       const files: Record<string, string> = {
@@ -2092,6 +2170,51 @@ describe('resolveType', () => {
         value: ['Number'],
       })
     })
+
+    test.each([
+      ['include', 'Boolean', '/packages/app/src/types.ts'],
+      ['exclude', 'Number', '/fallback.ts'],
+    ])(
+      'ts module resolve w/ cross-directory project reference & ${configDir} in %s',
+      (option, type, dependency) => {
+        const files = {
+          '/tsconfig.json': JSON.stringify({
+            references: [{ path: './packages/app/tsconfig.app.json' }],
+            compilerOptions: {
+              paths: {
+                '#my-types': ['./fallback'],
+              },
+            },
+          }),
+          '/packages/app/tsconfig.app.json': JSON.stringify({
+            extends: '../../configs/base.json',
+          }),
+          '/configs/base.json': JSON.stringify({
+            compilerOptions: {
+              paths: {
+                '#my-types': ['${configDir}/src/types'],
+              },
+            },
+            [option]: ['${configDir}/src/**/*'],
+          }),
+          '/packages/app/src/types.ts': 'export type Value = boolean',
+          '/fallback.ts': 'export type Value = number',
+        }
+
+        const { props, deps } = resolve(
+          `
+          import type { Value } from '#my-types'
+          defineProps<{ value: Value }>()
+          `,
+          files,
+          {},
+          '/packages/app/src/Comp.vue',
+        )
+
+        expect(props).toStrictEqual({ value: [type] })
+        expect(deps && [...deps]).toStrictEqual([dependency])
+      },
+    )
   })
 
   describe('errors', () => {
