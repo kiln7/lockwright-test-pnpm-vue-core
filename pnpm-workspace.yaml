@@ -28,3 +28,5 @@ peerDependencyRules:
     '@typescript-eslint/parser>eslint': '^9.0.0'
     '@typescript-eslint/type-utils>eslint': '^9.0.0'
     '@typescript-eslint/utils>eslint': '^9.0.0'
+overrides:
+  'dompurify@>=3.0.0 <3.4.17': '^3.4.17' # lockwright: GHSA-39q2-94rc-95cp, GHSA-55q2-fjhq-7xh7, GHSA-6688-9rhm-gjv2, GHSA-76mc-f452-cxcm, GHSA-c2j3-45gr-mqc4, GHSA-c6gr-qvv4-5v3f, GHSA-cj63-jhhr-wcxv, GHSA-cjmm-f4jc-qw8r, GHSA-cmwh-pvxp-8882, GHSA-crv5-9vww-q3g8, GHSA-gvmj-g25r-r7wr, GHSA-h7mw-gpvr-xq4m, GHSA-h8r8-wccr-v5f2, GHSA-hpcv-96wg-7vj8, GHSA-mrv2-3pqr-j5jr, GHSA-r47g-fvhr-h676, GHSA-rp9w-3fw7-7cwq, GHSA-v2wj-7wpq-c8vv, GHSA-v9jr-rg53-9pgp, GHSA-vxr8-fq34-vvx9, GHSA-x4vx-rjvf-j5p4
